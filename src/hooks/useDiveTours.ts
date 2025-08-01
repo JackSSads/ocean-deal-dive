@@ -85,18 +85,18 @@ export const useDiveTours = () => {
       setError(null);
 
       const updateData: UpdateTourRequest = {
-        ...(updates.client_name && { client_name: updates.client_name }),
-        ...(updates.client_contact && { client_contact: updates.client_contact }),
-        ...(updates.contact_type && { contact_type: updates.contact_type }),
-        ...(updates.tour_date && { date: updates.tour_date }),
-        ...(updates.guide_name && { guide_name: updates.guide_name }),
-        ...(updates.total_value !== undefined && { total_value: updates.total_value }),
-        ...(updates.guide_commission !== undefined && { guide_commission: updates.guide_commission }),
-        ...(updates.commission_type && { commission_type: updates.commission_type }),
-        ...(updates.client_payment_status && { client_payment_status: updates.client_payment_status }),
-        ...(updates.guide_payment_status && { guide_payment_status: updates.guide_payment_status }),
+        ...( 'client_name' in updates && { client_name: updates.client_name }),
+        ...( 'client_contact' in updates && { client_contact: updates.client_contact }),
+        ...( 'contact_type' in updates && { contact_type: updates.contact_type }),
+        ...( 'tour_date' in updates && { tour_date: updates.tour_date }),
+        ...( 'guide_name' in updates && { guide_name: updates.guide_name }),
+        ...( 'total_value' in updates && { total_value: updates.total_value }),
+        ...( 'guide_commission' in updates && { guide_commission: updates.guide_commission }),
+        ...( 'commission_type' in updates && { commission_type: updates.commission_type }),
+        ...( 'client_payment_status' in updates && { client_payment_status: updates.client_payment_status }),
+        ...( 'guide_payment_status' in updates && { guide_payment_status: updates.guide_payment_status }),
       };
-
+      
       const response = await tourService.updateTour(id, updateData);
 
       if (response.success) {
@@ -188,11 +188,11 @@ export const useDiveTours = () => {
       setError(null);
 
       const apiFilters = {
-        dateFrom: filters.dateFrom,
-        dateTo: filters.dateTo,
-        guideName: filters.guideName,
-        clientPaymentStatus: filters.clientPaymentStatus,
-        guidePaymentStatus: filters.guidePaymentStatus,
+        date_from: filters.date_from,
+        date_to: filters.date_to,
+        guide_name: filters.guide_name,
+        client_payment_status: filters.client_payment_status,
+        guide_payment_status: filters.guide_payment_status,
       };
 
       const data = await tourService.getToursWithFilters(apiFilters);
@@ -209,22 +209,22 @@ export const useDiveTours = () => {
 
   const filterTours = (filters: DiveTourFilters) => {
     return tours.filter(tour => {
-      if (filters.dateFrom && tour.tour_date < filters.dateFrom) return false;
-      if (filters.dateTo && tour.tour_date > filters.dateTo) return false;
+      if (filters.date_from && tour.tour_date < filters.date_from) return false;
+      if (filters.date_to && tour.tour_date > filters.date_to) return false;
 
-      if (filters.clientName && !tour.client_name.toLowerCase().includes(filters.clientName.toLowerCase())) {
+      if (filters.client_name && !tour.client_name.toLowerCase().includes(filters.client_name.toLowerCase())) {
         return false;
       }
 
-      if (filters.guideName && !tour.guide_name.toLowerCase().includes(filters.guideName.toLowerCase())) {
+      if (filters.guide_name && !tour.guide_name.toLowerCase().includes(filters.guide_name.toLowerCase())) {
         return false;
       }
 
-      if (filters.clientPaymentStatus && filters.clientPaymentStatus !== 'all' && tour.client_payment_status !== filters.clientPaymentStatus) {
+      if (filters.client_payment_status && filters.client_payment_status !== 'all' && tour.client_payment_status !== filters.client_payment_status) {
         return false;
       }
 
-      if (filters.guidePaymentStatus && filters.guidePaymentStatus !== 'all' && tour.guide_payment_status !== filters.guidePaymentStatus) {
+      if (filters.guide_payment_status && filters.guide_payment_status !== 'all' && tour.guide_payment_status !== filters.guide_payment_status) {
         return false;
       }
 
@@ -241,9 +241,9 @@ export const useDiveTours = () => {
 
   const calculateCommissionValue = (tour: DiveTour) => {
     if (tour.commission_type === 'percentage') {
-      return (tour.total_value * tour.guide_commission) / 100;
+      return Number((tour.total_value * tour.guide_commission) / 100);
     }
-    return tour.guide_commission;
+    return Number(tour.guide_commission);
   };
 
   const refreshData = useCallback(async () => {
