@@ -17,33 +17,33 @@ export const DiveTourForm = ({ onSuccess }: DiveTourFormProps) => {
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
-    clientName: '',
-    clientContact: '',
-    contactType: 'whatsapp' as 'whatsapp' | 'phone' | 'email',
-    tourDate: '',
-    guideName: '',
-    totalValue: '',
-    guideCommission: '',
-    commissionType: 'percentage' as 'percentage' | 'fixed',
-    clientPaymentStatus: 'pending' as 'paid' | 'pending',
-    guidePaymentStatus: 'pending' as 'paid' | 'pending',
+    client_name: '',
+    client_contact: '',
+    contact_type: 'whatsapp' as 'whatsapp' | 'phone' | 'email',
+    tour_date: '',
+    guide_name: 'Girou',
+    total_value: '180',
+    guide_commission: '80',
+    commission_type: 'fixed' as 'fixed' | 'percentage',
+    client_payment_status: 'pending' as 'paid' | 'pending',
+    guide_payment_status: 'pending' as 'paid' | 'pending',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       await addTour({
-        client_name: formData.clientName,
-        client_contact: formData.clientContact,
-        contact_type: formData.contactType,
-        tour_date: formData.tourDate,
-        guide_name: formData.guideName,
-        total_value: parseFloat(formData.totalValue),
-        guide_commission: parseFloat(formData.guideCommission),
-        commission_type: formData.commissionType,
-        client_payment_status: formData.clientPaymentStatus,
-        guide_payment_status: formData.guidePaymentStatus,
+        client_name: formData.client_name,
+        client_contact: formData.client_contact,
+        contact_type: formData.contact_type,
+        tour_date: formData.tour_date,
+        guide_name: formData.guide_name,
+        total_value: parseFloat(formData.total_value),
+        guide_commission: parseFloat(formData.guide_commission),
+        commission_type: formData.commission_type,
+        client_payment_status: formData.client_payment_status,
+        guide_payment_status: formData.guide_payment_status,
       });
 
       toast({
@@ -53,16 +53,16 @@ export const DiveTourForm = ({ onSuccess }: DiveTourFormProps) => {
 
       // Reset form
       setFormData({
-        clientName: '',
-        clientContact: '',
-        contactType: 'whatsapp',
-        tourDate: '',
-        guideName: '',
-        totalValue: '',
-        guideCommission: '',
-        commissionType: 'percentage',
-        clientPaymentStatus: 'pending',
-        guidePaymentStatus: 'pending',
+        client_name: '',
+        client_contact: '',
+        contact_type: 'whatsapp',
+        tour_date: '',
+        guide_name: 'Girou',
+        total_value: '180',
+        guide_commission: '80',
+        commission_type: 'fixed',
+        client_payment_status: 'pending',
+        guide_payment_status: 'pending',
       });
 
       onSuccess?.();
@@ -84,22 +84,22 @@ export const DiveTourForm = ({ onSuccess }: DiveTourFormProps) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="clientName">Nome do Cliente</Label>
+              <Label htmlFor="client_name">Nome do Cliente</Label>
               <Input
-                id="clientName"
-                value={formData.clientName}
-                onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+                id="client_name"
+                value={formData.client_name}
+                onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="clientContact">Contato do Cliente</Label>
+              <Label htmlFor="client_contact">Contato do Cliente</Label>
               <div className="flex space-x-2">
                 <Select
-                  value={formData.contactType}
+                  value={formData.contact_type}
                   onValueChange={(value: 'whatsapp' | 'phone' | 'email') =>
-                    setFormData({ ...formData, contactType: value })
+                    setFormData({ ...formData, contact_type: value })
                   }
                 >
                   <SelectTrigger className="w-32">
@@ -112,10 +112,10 @@ export const DiveTourForm = ({ onSuccess }: DiveTourFormProps) => {
                   </SelectContent>
                 </Select>
                 <Input
-                  id="clientContact"
-                  value={formData.clientContact}
-                  onChange={(e) => setFormData({ ...formData, clientContact: e.target.value })}
-                  placeholder={formData.contactType === 'email' ? 'email@exemplo.com' : '(11) 99999-9999'}
+                  id="client_contact"
+                  value={formData.client_contact}
+                  onChange={(e) => setFormData({ ...formData, client_contact: e.target.value })}
+                  placeholder={formData.contact_type === 'email' ? 'email@exemplo.com' : '(00) 99999-9999'}
                   required
                   className="flex-1"
                 />
@@ -123,55 +123,58 @@ export const DiveTourForm = ({ onSuccess }: DiveTourFormProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date">Data do Passeio</Label>
+              <Label htmlFor="tour_date">Data do Passeio</Label>
               <Input
-                id="date"
+                id="tour_date"
                 type="date"
-                value={formData.tourDate}
-                onChange={(e) => setFormData({ ...formData, tourDate: e.target.value })}
+                value={formData.tour_date}
+                onChange={(e) => setFormData({ ...formData, tour_date: e.target.value })}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="guideName">Nome do Guia</Label>
+              <Label htmlFor="guide_name">Nome do Guia</Label>
               <Input
-                id="guideName"
-                value={formData.guideName}
-                onChange={(e) => setFormData({ ...formData, guideName: e.target.value })}
+                id="guide_name"
+                value={formData.guide_name}
+                defaultValue='Girou'
+                onChange={(e) => setFormData({ ...formData, guide_name: e.target.value })}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="totalValue">Valor Total (R$)</Label>
+              <Label htmlFor="total_value">Valor Total (R$)</Label>
               <Input
-                id="totalValue"
+                id="total_value"
                 type="number"
                 step="0.01"
-                value={formData.totalValue}
-                onChange={(e) => setFormData({ ...formData, totalValue: e.target.value })}
+                value={formData.total_value}
+                defaultValue='180'
+                onChange={(e) => setFormData({ ...formData, total_value: e.target.value })}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="guideCommission">Comissão do Guia</Label>
+              <Label htmlFor="guide_commission">Comissão do Guia</Label>
               <div className="flex space-x-2">
                 <Input
-                  id="guideCommission"
+                  id="guide_commission"
                   type="number"
                   step="0.01"
-                  value={formData.guideCommission}
-                  onChange={(e) => setFormData({ ...formData, guideCommission: e.target.value })}
+                  value={formData.guide_commission}
+                  defaultValue='80'
+                  onChange={(e) => setFormData({ ...formData, guide_commission: e.target.value })}
                   required
                   className="flex-1"
                 />
                 <Select
-                  value={formData.commissionType}
+                  value={formData.commission_type}
                   defaultValue='fixed'
                   onValueChange={(value: 'fixed' | 'percentage') =>
-                    setFormData({ ...formData, commissionType: value })
+                    setFormData({ ...formData, commission_type: value })
                   }
                 >
                   <SelectTrigger className="w-24">
@@ -186,11 +189,11 @@ export const DiveTourForm = ({ onSuccess }: DiveTourFormProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="clientPaymentStatus">Pagamento do Cliente</Label>
+              <Label htmlFor="client_payment_status">Pagamento do Cliente</Label>
               <Select
-                value={formData.clientPaymentStatus}
+                value={formData.client_payment_status}
                 onValueChange={(value: 'paid' | 'pending') =>
-                  setFormData({ ...formData, clientPaymentStatus: value })
+                  setFormData({ ...formData, client_payment_status: value })
                 }
               >
                 <SelectTrigger>
@@ -204,11 +207,11 @@ export const DiveTourForm = ({ onSuccess }: DiveTourFormProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="guidePaymentStatus">Pagamento do Guia</Label>
+              <Label htmlFor="guide_payment_status">Pagamento do Guia</Label>
               <Select
-                value={formData.guidePaymentStatus}
+                value={formData.guide_payment_status}
                 onValueChange={(value: 'paid' | 'pending') =>
-                  setFormData({ ...formData, guidePaymentStatus: value })
+                  setFormData({ ...formData, guide_payment_status: value })
                 }
               >
                 <SelectTrigger>

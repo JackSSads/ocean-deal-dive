@@ -16,20 +16,40 @@ export const DiveToursTable = () => {
   const { toast } = useToast();
 
   const [filters, setFilters] = useState<DiveTourFilters>({
-    clientPaymentStatus: 'all',
-    guidePaymentStatus: 'all',
+    client_payment_status: 'all',
+    guide_payment_status: 'all',
   });
 
   const filteredTours = filterTours(filters);
 
-  const updatePaymentStatus = (
-    tourId: string, 
-    type: 'client' | 'guide', 
-    status: 'paid' | 'pending'
+  const updatePaymentStatus = async (
+    tourId: string,
+    type: 'client' | 'guide',
+    client_name: string,
+    client_contact: string,
+    contact_type: "whatsapp" | "phone" | "email",
+    tour_date: string,
+    guide_name: string,
+    total_value: number,
+    guide_commission: number,
+    commission_type: "fixed" | "percentage",
+    client_payment_status: "paid" | "pending",
+    guide_payment_status: "paid" | "pending",
   ) => {
-    const updateField = type === 'client' ? 'clientPaymentStatus' : 'guidePaymentStatus';
-    updateTour(tourId, { [updateField]: status });
-    
+
+    await updateTour(tourId, {
+      client_payment_status: client_payment_status,
+      guide_payment_status: guide_payment_status,
+      client_name: client_name,
+      client_contact: client_contact,
+      contact_type: contact_type,
+      tour_date: tour_date,
+      guide_name: guide_name,
+      total_value: total_value,
+      guide_commission: guide_commission,
+      commission_type: commission_type,
+    });
+
     toast({
       title: "Status atualizado!",
       description: `Pagamento ${type === 'client' ? 'do cliente' : 'do guia'} marcado como ${status === 'paid' ? 'pago' : 'pendente'}.`,
@@ -52,7 +72,7 @@ export const DiveToursTable = () => {
   const handleContactClick = (tour: DiveTour) => {
     if (tour.contact_type === 'whatsapp') {
       const whatsappNumber = tour.client_contact.replace(/\D/g, '');
-      window.open(`https://wa.me/55${whatsappNumber}`, '_blank');
+      window.open(`https://wa.me/55${whatsappNumber}?text=9d1a873d-3862-44b6-8244-67e1f032cd6f`, '_blank');
     } else if (tour.contact_type === 'email') {
       window.open(`mailto:${tour.client_contact}`, '_blank');
     } else {
@@ -95,8 +115,8 @@ export const DiveToursTable = () => {
               <Input
                 id="dateFrom"
                 type="date"
-                value={filters.dateFrom || ''}
-                onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                value={filters.date_from || ''}
+                onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
               />
             </div>
 
@@ -105,8 +125,8 @@ export const DiveToursTable = () => {
               <Input
                 id="dateTo"
                 type="date"
-                value={filters.dateTo || ''}
-                onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+                value={filters.date_to || ''}
+                onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
               />
             </div>
 
@@ -115,16 +135,16 @@ export const DiveToursTable = () => {
               <Input
                 id="guideName"
                 placeholder="Nome do guia..."
-                value={filters.guideName || ''}
-                onChange={(e) => setFilters({ ...filters, guideName: e.target.value })}
+                value={filters.guide_name || ''}
+                onChange={(e) => setFilters({ ...filters, guide_name: e.target.value })}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="clientPayment">Pagamento Cliente</Label>
               <Select
-                value={filters.clientPaymentStatus || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, clientPaymentStatus: value as any })}
+                value={filters.client_payment_status || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, client_payment_status: value as any })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -140,8 +160,8 @@ export const DiveToursTable = () => {
             <div className="space-y-2">
               <Label htmlFor="guidePayment">Pagamento Guia</Label>
               <Select
-                value={filters.guidePaymentStatus || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, guidePaymentStatus: value as any })}
+                value={filters.guide_payment_status || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, guide_payment_status: value as any })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -158,8 +178,8 @@ export const DiveToursTable = () => {
               <Button
                 variant="outline"
                 onClick={() => setFilters({
-                  clientPaymentStatus: 'all',
-                  guidePaymentStatus: 'all',
+                  client_payment_status: 'all',
+                  guide_payment_status: 'all',
                 })}
                 className="w-full"
               >
@@ -196,7 +216,7 @@ export const DiveToursTable = () => {
               <TableBody>
                 {filteredTours.map((tour) => (
                   <TableRow key={tour.tour_id}>
-                    <TableCell className="font-medium">{tour.client_name}</TableCell>
+                    <TableCell className="font-medium text-nowrap">{tour.client_name}</TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
@@ -212,7 +232,7 @@ export const DiveToursTable = () => {
                     <TableCell>{tour.guide_name}</TableCell>
                     <TableCell>{formatCurrency(tour.total_value)}</TableCell>
                     <TableCell>
-                      {tour.commission_type === 'percentage' 
+                      {tour.commission_type === 'percentage'
                         ? `${tour.guide_commission}% (${formatCurrency(calculateCommissionValue(tour))})`
                         : formatCurrency(tour.guide_commission)
                       }
@@ -222,9 +242,18 @@ export const DiveToursTable = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => updatePaymentStatus(
-                          tour.tour_id, 
-                          'client', 
-                          tour.client_payment_status === 'paid' ? 'pending' : 'paid'
+                          tour.tour_id,
+                          'client',
+                          tour.client_name,
+                          tour.client_contact,
+                          tour.contact_type,
+                          tour.tour_date,
+                          tour.guide_name,
+                          tour.total_value,
+                          tour.guide_commission,
+                          tour.commission_type,
+                          tour.client_payment_status === 'paid' ? 'pending' : 'paid',
+                          tour.guide_payment_status,
                         )}
                       >
                         <Badge variant={tour.client_payment_status === 'paid' ? 'paid' : 'pending'}>
@@ -237,9 +266,18 @@ export const DiveToursTable = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => updatePaymentStatus(
-                          tour.tour_id, 
-                          'guide', 
-                          tour.guide_payment_status === 'paid' ? 'pending' : 'paid'
+                          tour.tour_id,
+                          'guide',
+                          tour.client_name,
+                          tour.client_contact,
+                          tour.contact_type,
+                          tour.tour_date,
+                          tour.guide_name,
+                          tour.total_value,
+                          tour.guide_commission,
+                          tour.commission_type,
+                          tour.client_payment_status,
+                          tour.guide_payment_status === 'paid' ? 'pending' : 'paid',
                         )}
                       >
                         <Badge variant={tour.guide_payment_status === 'paid' ? 'paid' : 'pending'}>
