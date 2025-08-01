@@ -98,18 +98,18 @@ class TourService {
   }
 
   async getToursWithFilters(filters: {
-    dateFrom?: string;
-    dateTo?: string;
-    guideName?: string;
-    clientPaymentStatus?: 'paid' | 'pending' | 'all';
-    guidePaymentStatus?: 'paid' | 'pending' | 'all';
+    date_from?: string;
+    date_to?: string;
+    guide_name?: string;
+    client_payment_status?: 'paid' | 'pending' | 'all';
+    guide_payment_status?: 'paid' | 'pending' | 'all';
   }): Promise<DiveTour[]> {
     try {
         
-      if (filters.dateFrom && filters.dateTo) {
+      if (filters.date_from && filters.date_to) {
         const tours = await this.getToursByDateRange({
-          startDate: filters.dateFrom,
-          endDate: filters.dateTo
+          startDate: filters.date_from,
+          endDate: filters.date_to
         });
         
         
@@ -117,8 +117,8 @@ class TourService {
       }
 
       
-      if (filters.guideName) {
-        const tours = await this.getToursByGuide(filters.guideName);
+      if (filters.guide_name) {
+        const tours = await this.getToursByGuide(filters.guide_name);
         return this.applyFilters(tours, filters);
       }
 
@@ -131,34 +131,34 @@ class TourService {
   }
 
   private applyFilters(tours: DiveTour[], filters: {
-    dateFrom?: string;
-    dateTo?: string;
-    guideName?: string;
-    clientPaymentStatus?: 'paid' | 'pending' | 'all';
-    guidePaymentStatus?: 'paid' | 'pending' | 'all';
+    date_from?: string;
+    date_to?: string;
+    guide_name?: string;
+    client_payment_status?: 'paid' | 'pending' | 'all';
+    guide_payment_status?: 'paid' | 'pending' | 'all';
   }): DiveTour[] {
     return tours.filter(tour => {
         
-      if (filters.dateFrom && new Date(tour.tour_date) < new Date(filters.dateFrom)) {
+      if (filters.date_from && new Date(tour.tour_date) < new Date(filters.date_from)) {
         return false;
       }
-      if (filters.dateTo && new Date(tour.tour_date) > new Date(filters.dateTo)) {
-        return false;
-      }
-
-      
-      if (filters.guideName && !tour.guide_name.toLowerCase().includes(filters.guideName.toLowerCase())) {
+      if (filters.date_to && new Date(tour.tour_date) > new Date(filters.date_to)) {
         return false;
       }
 
       
-      if (filters.clientPaymentStatus && filters.clientPaymentStatus !== 'all' && 
-          tour.guide_payment_status !== filters.clientPaymentStatus) {
+      if (filters.guide_name && !tour.guide_name.toLowerCase().includes(filters.guide_name.toLowerCase())) {
         return false;
       }
 
-      if (filters.guidePaymentStatus && filters.guidePaymentStatus !== 'all' && 
-          tour.guide_payment_status !== filters.guidePaymentStatus) {
+      
+      if (filters.client_payment_status && filters.client_payment_status !== 'all' && 
+          tour.guide_payment_status !== filters.client_payment_status) {
+        return false;
+      }
+
+      if (filters.guide_payment_status && filters.guide_payment_status !== 'all' && 
+          tour.guide_payment_status !== filters.guide_payment_status) {
         return false;
       }
 
