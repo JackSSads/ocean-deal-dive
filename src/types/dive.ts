@@ -15,11 +15,11 @@ export interface DiveTour {
 }
 
 export interface DiveTourFilters {
-  dateFrom?: string;
-  dateTo?: string;
-  clientName?: string;
-  guideName?: string;
-  clientPaymentStatus?: 'paid' | 'pending' | 'all';
-  guidePaymentStatus?: 'paid' | 'pending' | 'all';
+  date_from?: string;
+  date_to?: string;
+  client_name?: string;
+  guide_name?: string;
+  client_payment_status?: 'paid' | 'pending' | 'all';
+  guide_payment_status?: 'paid' | 'pending' | 'all';
   search?: string;
 }
