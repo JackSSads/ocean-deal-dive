@@ -1,11 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DiveTour, DiveTourFilters } from '@/types/dive';
-import { tourService, CreateTourRequest, UpdateTourRequest, PaginationInfo } from '@/service/tour/TourService';
+import {
+  DiveTour,
+  DiveTourFilters,
+  CreateTourRequest,
+  UpdateTourRequest,
+  PaginationInfo,
+  Metrics
+} from '@/types/dive';
+import { tourService } from '@/service/tour/TourService';
 
 export const useDiveTours = () => {
   const [tours, setTours] = useState<DiveTour[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<Metrics>();
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -34,6 +42,7 @@ export const useDiveTours = () => {
       setError(null);
       const response = await tourService.getAllTours(page, limit);
       setTours(response.data);
+      setMetrics(response.metrics);
       setPagination(response.pagination);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tours');
@@ -94,18 +103,18 @@ export const useDiveTours = () => {
       setError(null);
 
       const updateData: UpdateTourRequest = {
-        ...( 'client_name' in updates && { client_name: updates.client_name }),
-        ...( 'client_contact' in updates && { client_contact: updates.client_contact }),
-        ...( 'contact_type' in updates && { contact_type: updates.contact_type }),
-        ...( 'tour_date' in updates && { tour_date: updates.tour_date }),
-        ...( 'guide_name' in updates && { guide_name: updates.guide_name }),
-        ...( 'total_value' in updates && { total_value: updates.total_value }),
-        ...( 'guide_commission' in updates && { guide_commission: updates.guide_commission }),
-        ...( 'commission_type' in updates && { commission_type: updates.commission_type }),
-        ...( 'client_payment_status' in updates && { client_payment_status: updates.client_payment_status }),
-        ...( 'guide_payment_status' in updates && { guide_payment_status: updates.guide_payment_status }),
+        ...('client_name' in updates && { client_name: updates.client_name }),
+        ...('client_contact' in updates && { client_contact: updates.client_contact }),
+        ...('contact_type' in updates && { contact_type: updates.contact_type }),
+        ...('tour_date' in updates && { tour_date: updates.tour_date }),
+        ...('guide_name' in updates && { guide_name: updates.guide_name }),
+        ...('total_value' in updates && { total_value: updates.total_value }),
+        ...('guide_commission' in updates && { guide_commission: updates.guide_commission }),
+        ...('commission_type' in updates && { commission_type: updates.commission_type }),
+        ...('client_payment_status' in updates && { client_payment_status: updates.client_payment_status }),
+        ...('guide_payment_status' in updates && { guide_payment_status: updates.guide_payment_status }),
       };
-      
+
       const response = await tourService.updateTour(id, updateData);
 
       if (response.success) {
@@ -263,13 +272,6 @@ export const useDiveTours = () => {
     });
   };
 
-  const calculateCommissionValue = (tour: DiveTour) => {
-    if (tour.commission_type === 'percentage') {
-      return Number((tour.total_value * tour.guide_commission) / 100);
-    }
-    return Number(tour.guide_commission);
-  };
-
   const refreshData = useCallback(async () => {
     await loadTours(pagination.page, pagination.limit);
     await loadStats();
@@ -285,6 +287,7 @@ export const useDiveTours = () => {
     error,
     stats,
     pagination,
+    metrics,
 
     addTour,
     updateTour,
@@ -294,7 +297,6 @@ export const useDiveTours = () => {
     getToursByGuide,
     getToursWithFilters,
     filterTours,
-    calculateCommissionValue,
     goToPage,
     changePageSize,
     refreshData,
