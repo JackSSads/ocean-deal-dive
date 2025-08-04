@@ -3,15 +3,15 @@ import { useDiveTours } from '@/hooks/useDiveTours';
 import { DollarSign, Users, Calendar, TrendingUp } from 'lucide-react';
 
 export const DashboardStats = () => {
-  const { tours, calculateCommissionValue } = useDiveTours();
+  const { tours, metrics } = useDiveTours();
 
   const stats = {
-    totalTours: tours.length,
-    totalRevenue: tours.reduce((sum, tour) => sum + Number(tour.total_value), 0),
-    totalCommissions: tours.reduce((sum, tour) => sum + calculateCommissionValue(tour), 0),
-    pendingPayments: tours.filter(tour => tour.client_payment_status === 'pending').length,
-    paidTours: tours.filter(tour => tour.client_payment_status === 'paid').length,
-    pendingGuidePayments: tours.filter(tour => tour.guide_payment_status === 'pending').length,
+    total_tours: metrics?.total_count,
+    total_revenue: metrics?.total_value,
+    total_commissions: metrics?.total_guide_commission,
+    pending_payments: metrics?.total_pending_payments,
+    paid_tours: metrics?.total_paid_tours,
+    pending_guide_payments: metrics?.total_guide_commission_pedding,
   };
 
   const formatCurrency = (value: number) => {
@@ -24,23 +24,23 @@ export const DashboardStats = () => {
   const statCards = [
     {
       title: 'Total de Passeios',
-      value: stats.totalTours,
+      value: stats.total_tours,
       icon: Calendar,
-      description: `${stats.paidTours} pagos, ${stats.pendingPayments} pendentes`,
+      description: `${stats.paid_tours} pagos, ${stats.pending_payments} pendentes`,
       className: 'bg-ocean-light text-ocean-blue',
     },
     {
       title: 'Receita Total',
-      value: formatCurrency(stats.totalRevenue),
+      value: formatCurrency(stats.total_revenue),
       icon: DollarSign,
       description: 'Valor total de todos os passeios',
       className: 'bg-ocean-blue text-white',
     },
     {
       title: 'Comissões Totais',
-      value: formatCurrency(stats.totalCommissions),
+      value: formatCurrency(stats.total_commissions),
       icon: TrendingUp,
-      description: `${stats.pendingGuidePayments} pendentes`,
+      description: `${stats.pending_guide_payments} pendentes`,
       className: 'bg-sea-green text-ocean-blue',
     },
     {
