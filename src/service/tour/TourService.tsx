@@ -1,57 +1,14 @@
 import { API } from '../axiosConfig';
-import { DiveTour } from '../../types/dive';
-
-export interface CreateTourRequest {
-  client_name: string;
-  client_contact: string;
-  contact_type?: 'whatsapp' | 'phone' | 'email';
-  tour_date: string;
-  guide_name: string;
-  total_value: number;
-  guide_commission: number;
-  commission_type?: 'percentage' | 'fixed';
-  client_payment_status?: 'paid' | 'pending';
-  guide_payment_status?: 'paid' | 'pending';
-}
-
-export interface UpdateTourRequest extends Partial<CreateTourRequest> {}
-
-export interface PaginationInfo {
-  page: number;
-  limit: number;
-  totalCount: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-}
-
-export interface PaginatedResponse<T> {
-  success: boolean;
-  data: T[];
-  pagination: PaginationInfo;
-}
-
-export interface ApiResponse<T = any> {
-  success: boolean;
-  message?: string;
-  data?: T;
-  count?: number;
-  tourId?: string;
-  pagination?: PaginationInfo;
-}
-
-export interface DateRangeParams {
-  startDate: string;
-  endDate: string;
-  page?: number;
-  limit?: number;
-}
-
-export interface GuideParams {
-  guideName: string;
-  page?: number;
-  limit?: number;
-}
+import {
+  DiveTour,
+  CreateTourRequest,
+  UpdateTourRequest,
+  PaginatedResponse,
+  GetAllDataResponse,
+  ApiResponse,
+  DateRangeParams,
+  GuideParams
+} from '../../types/dive';
 
 class TourService {
   private readonly baseUrl = '/api/tour';
@@ -65,9 +22,9 @@ class TourService {
     }
   }
 
-  async getAllTours(page = 1, limit = 10): Promise<PaginatedResponse<DiveTour>> {
+  async getAllTours(page = 1, limit = 10): Promise<GetAllDataResponse<DiveTour>> {
     try {
-      const response = await API.get<PaginatedResponse<DiveTour>>(this.baseUrl, {
+      const response = await API.get<GetAllDataResponse<DiveTour>>(this.baseUrl, {
         params: { page, limit }
       });
       return response.data;
@@ -139,7 +96,7 @@ class TourService {
   }): Promise<PaginatedResponse<DiveTour>> {
     try {
       const { page = 1, limit = 10, ...otherFilters } = filters;
-        
+
       if (otherFilters.date_from && otherFilters.date_to) {
         const tours = await this.getToursByDateRange({
           startDate: otherFilters.date_from,
@@ -147,7 +104,7 @@ class TourService {
           page,
           limit
         });
-        
+
         // Apply additional filters to the paginated results
         const filteredTours = this.applyFilters(tours.data, otherFilters);
         return {
@@ -195,13 +152,13 @@ class TourService {
         return false;
       }
 
-      if (filters.client_payment_status && filters.client_payment_status !== 'all' && 
-          tour.client_payment_status !== filters.client_payment_status) {
+      if (filters.client_payment_status && filters.client_payment_status !== 'all' &&
+        tour.client_payment_status !== filters.client_payment_status) {
         return false;
       }
 
-      if (filters.guide_payment_status && filters.guide_payment_status !== 'all' && 
-          tour.guide_payment_status !== filters.guide_payment_status) {
+      if (filters.guide_payment_status && filters.guide_payment_status !== 'all' &&
+        tour.guide_payment_status !== filters.guide_payment_status) {
         return false;
       }
 
@@ -213,11 +170,11 @@ class TourService {
     if (error.response?.data?.message) {
       return new Error(error.response.data.message);
     }
-    
+
     if (error.message) {
       return new Error(error.message);
     }
-    
+
     return new Error(defaultMessage);
   }
 
@@ -235,21 +192,21 @@ class TourService {
         params: { page: 1, limit: 1000 } // Get a large number to get all tours
       });
       const tours = response.data.data;
-      
+
       const now = new Date();
       const thisMonth = now.getMonth();
       const thisYear = now.getFullYear();
-      
+
       const thisMonthTours = tours.filter(tour => {
         const tourDate = new Date(tour.tour_date);
         return tourDate.getMonth() === thisMonth && tourDate.getFullYear() === thisYear;
       });
-      
+
       const totalRevenue = tours.reduce((sum, tour) => sum + tour.total_value, 0);
       const thisMonthRevenue = thisMonthTours.reduce((sum, tour) => sum + tour.total_value, 0);
       const pendingPayments = tours.filter(tour => tour.client_payment_status === 'pending').length;
       const completedTours = tours.filter(tour => new Date(tour.tour_date) < now).length;
-      
+
       return {
         totalTours: tours.length,
         totalRevenue,
