@@ -9,10 +9,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DiveTour, DiveTourFilters } from '@/types/dive';
 import { useDiveTours } from '@/hooks/useDiveTours';
 import { useToast } from '@/hooks/use-toast';
-import { MessageCircle, Phone, Mail, Edit, Trash2 } from 'lucide-react';
+import { MessageCircle, Phone, Mail, Edit, Trash2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 export const DiveToursTable = () => {
-  const { tours, updateTour, deleteTour, filterTours, calculateCommissionValue } = useDiveTours();
+  const { 
+    tours, 
+    updateTour, 
+    deleteTour, 
+    filterTours, 
+    calculateCommissionValue,
+    pagination,
+    goToPage,
+    changePageSize,
+    loading 
+  } = useDiveTours();
   const { toast } = useToast();
 
   const [filters, setFilters] = useState<DiveTourFilters>({
@@ -52,7 +62,7 @@ export const DiveToursTable = () => {
 
     toast({
       title: "Status atualizado!",
-      description: `Pagamento ${type === 'client' ? 'do cliente' : 'do guia'} marcado como ${status === 'paid' ? 'pago' : 'pendente'}.`,
+      description: `Pagamento ${type === 'client' ? 'do cliente' : 'do guia'} marcado como ${client_payment_status === 'paid' ? 'pago' : 'pendente'}.`,
     });
   };
 
@@ -89,6 +99,99 @@ export const DiveToursTable = () => {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const handlePageChange = (page: number) => {
+    goToPage(page);
+  };
+
+  const handlePageSizeChange = (newLimit: number) => {
+    changePageSize(newLimit);
+  };
+
+  const renderPaginationControls = () => {
+    if (pagination.totalPages <= 1) return null;
+
+    const startPage = Math.max(1, pagination.page - 2);
+    const endPage = Math.min(pagination.totalPages, pagination.page + 2);
+
+    return (
+      <div className="flex items-center justify-between space-x-2 py-4">
+        <div className="flex items-center space-x-2">
+          <p className="text-sm text-muted-foreground">
+            Mostrando {((pagination.page - 1) * pagination.limit) + 1} a{' '}
+            {Math.min(pagination.page * pagination.limit, pagination.totalCount)} de{' '}
+            {pagination.totalCount} resultados
+          </p>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Select
+            value={pagination.limit.toString()}
+            onValueChange={(value) => handlePageSizeChange(parseInt(value))}
+          >
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(1)}
+              disabled={!pagination.hasPrevPage}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={!pagination.hasPrevPage}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map((page) => (
+              <Button
+                key={page}
+                variant={page === pagination.page ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePageChange(page)}
+                className="w-8 h-8"
+              >
+                {page}
+              </Button>
+            ))}
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={!pagination.hasNextPage}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(pagination.totalPages)}
+              disabled={!pagination.hasNextPage}
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -194,7 +297,7 @@ export const DiveToursTable = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-ocean-blue">
-            Mergulhos Cadastrados ({filteredTours.length})
+            Mergulhos Cadastrados ({pagination.totalCount})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -214,92 +317,102 @@ export const DiveToursTable = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTours.map((tour) => (
-                  <TableRow key={tour.tour_id}>
-                    <TableCell className="font-medium text-nowrap">{tour.client_name}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleContactClick(tour)}
-                        className="flex items-center space-x-2 p-2"
-                      >
-                        {getContactIcon(tour.contact_type)}
-                        <span className="text-sm">{tour.client_contact}</span>
-                      </Button>
-                    </TableCell>
-                    <TableCell>{formatDate(tour.tour_date)}</TableCell>
-                    <TableCell>{tour.guide_name}</TableCell>
-                    <TableCell>{formatCurrency(tour.total_value)}</TableCell>
-                    <TableCell>
-                      {tour.commission_type === 'percentage'
-                        ? `${tour.guide_commission}% (${formatCurrency(calculateCommissionValue(tour))})`
-                        : formatCurrency(tour.guide_commission)
-                      }
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => updatePaymentStatus(
-                          tour.tour_id,
-                          'client',
-                          tour.client_name,
-                          tour.client_contact,
-                          tour.contact_type,
-                          tour.tour_date,
-                          tour.guide_name,
-                          tour.total_value,
-                          tour.guide_commission,
-                          tour.commission_type,
-                          tour.client_payment_status === 'paid' ? 'pending' : 'paid',
-                          tour.guide_payment_status,
-                        )}
-                      >
-                        <Badge variant={tour.client_payment_status === 'paid' ? 'paid' : 'pending'}>
-                          {tour.client_payment_status === 'paid' ? 'Pago' : 'Pendente'}
-                        </Badge>
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => updatePaymentStatus(
-                          tour.tour_id,
-                          'guide',
-                          tour.client_name,
-                          tour.client_contact,
-                          tour.contact_type,
-                          tour.tour_date,
-                          tour.guide_name,
-                          tour.total_value,
-                          tour.guide_commission,
-                          tour.commission_type,
-                          tour.client_payment_status,
-                          tour.guide_payment_status === 'paid' ? 'pending' : 'paid',
-                        )}
-                      >
-                        <Badge variant={tour.guide_payment_status === 'paid' ? 'paid' : 'pending'}>
-                          {tour.guide_payment_status === 'paid' ? 'Pago' : 'Pendente'}
-                        </Badge>
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteTour(tour.tour_id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ocean-blue"></div>
+                        <span className="ml-2">Carregando...</span>
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
-                {filteredTours.length === 0 && (
+                ) : tours.length > 0 ? (
+                  tours.map((tour) => (
+                    <TableRow key={tour.tour_id}>
+                      <TableCell className="font-medium text-nowrap">{tour.client_name}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleContactClick(tour)}
+                          className="flex items-center space-x-2 p-2"
+                        >
+                          {getContactIcon(tour.contact_type)}
+                          <span className="text-sm">{tour.client_contact}</span>
+                        </Button>
+                      </TableCell>
+                      <TableCell>{formatDate(tour.tour_date)}</TableCell>
+                      <TableCell>{tour.guide_name}</TableCell>
+                      <TableCell>{formatCurrency(tour.total_value)}</TableCell>
+                      <TableCell>
+                        {tour.commission_type === 'percentage'
+                          ? `${tour.guide_commission}% (${formatCurrency(calculateCommissionValue(tour))})`
+                          : formatCurrency(tour.guide_commission)
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => updatePaymentStatus(
+                            tour.tour_id,
+                            'client',
+                            tour.client_name,
+                            tour.client_contact,
+                            tour.contact_type,
+                            tour.tour_date,
+                            tour.guide_name,
+                            tour.total_value,
+                            tour.guide_commission,
+                            tour.commission_type,
+                            tour.client_payment_status === 'paid' ? 'pending' : 'paid',
+                            tour.guide_payment_status,
+                          )}
+                        >
+                          <Badge variant={tour.client_payment_status === 'paid' ? 'paid' : 'pending'}>
+                            {tour.client_payment_status === 'paid' ? 'Pago' : 'Pendente'}
+                          </Badge>
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => updatePaymentStatus(
+                            tour.tour_id,
+                            'guide',
+                            tour.client_name,
+                            tour.client_contact,
+                            tour.contact_type,
+                            tour.tour_date,
+                            tour.guide_name,
+                            tour.total_value,
+                            tour.guide_commission,
+                            tour.commission_type,
+                            tour.client_payment_status,
+                            tour.guide_payment_status === 'paid' ? 'pending' : 'paid',
+                          )}
+                        >
+                          <Badge variant={tour.guide_payment_status === 'paid' ? 'paid' : 'pending'}>
+                            {tour.guide_payment_status === 'paid' ? 'Pago' : 'Pendente'}
+                          </Badge>
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteTour(tour.tour_id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       Nenhum mergulho encontrado
@@ -309,6 +422,9 @@ export const DiveToursTable = () => {
               </TableBody>
             </Table>
           </div>
+          
+          {/* Pagination Controls */}
+          {renderPaginationControls()}
         </CardContent>
       </Card>
     </div>

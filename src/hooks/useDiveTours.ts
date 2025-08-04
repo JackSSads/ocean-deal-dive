@@ -1,11 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DiveTour, DiveTourFilters } from '@/types/dive';
-import { tourService, CreateTourRequest, UpdateTourRequest } from '@/service/tour/TourService';
+import { tourService, CreateTourRequest, UpdateTourRequest, PaginationInfo } from '@/service/tour/TourService';
 
 export const useDiveTours = () => {
   const [tours, setTours] = useState<DiveTour[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    totalCount: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
   const [stats, setStats] = useState({
     totalTours: 0,
     totalRevenue: 0,
@@ -20,12 +28,13 @@ export const useDiveTours = () => {
     loadStats();
   }, []);
 
-  const loadTours = useCallback(async () => {
+  const loadTours = useCallback(async (page = 1, limit = 10) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await tourService.getAllTours();
-      setTours(data);
+      const response = await tourService.getAllTours(page, limit);
+      setTours(response.data);
+      setPagination(response.pagination);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tours');
       console.error('Error loading tours:', err);
@@ -64,7 +73,7 @@ export const useDiveTours = () => {
       const response = await tourService.createTour(createData);
 
       if (response.success) {
-        await loadTours();
+        await loadTours(pagination.page, pagination.limit);
         await loadStats();
         return response;
       } else {
@@ -100,7 +109,7 @@ export const useDiveTours = () => {
       const response = await tourService.updateTour(id, updateData);
 
       if (response.success) {
-        await loadTours();
+        await loadTours(pagination.page, pagination.limit);
         await loadStats();
         return response;
       } else {
@@ -124,7 +133,7 @@ export const useDiveTours = () => {
 
       if (response.success) {
         // Reload tours to get the updated list
-        await loadTours();
+        await loadTours(pagination.page, pagination.limit);
         await loadStats();
         return response;
       } else {
@@ -150,13 +159,14 @@ export const useDiveTours = () => {
     }
   };
 
-  const getToursByDateRange = async (startDate: string, endDate: string) => {
+  const getToursByDateRange = async (startDate: string, endDate: string, page = 1, limit = 10) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await tourService.getToursByDateRange({ startDate, endDate });
-      setTours(data);
-      return data;
+      const response = await tourService.getToursByDateRange({ startDate, endDate, page, limit });
+      setTours(response.data);
+      setPagination(response.pagination);
+      return response.data;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch tours by date range');
       console.error('Error fetching tours by date range:', err);
@@ -166,13 +176,14 @@ export const useDiveTours = () => {
     }
   };
 
-  const getToursByGuide = async (guideName: string) => {
+  const getToursByGuide = async (guideName: string, page = 1, limit = 10) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await tourService.getToursByGuide(guideName);
-      setTours(data);
-      return data;
+      const response = await tourService.getToursByGuide({ guideName, page, limit });
+      setTours(response.data);
+      setPagination(response.pagination);
+      return response.data;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch tours by guide');
       console.error('Error fetching tours by guide:', err);
@@ -182,7 +193,7 @@ export const useDiveTours = () => {
     }
   };
 
-  const getToursWithFilters = async (filters: DiveTourFilters) => {
+  const getToursWithFilters = async (filters: DiveTourFilters & { page?: number; limit?: number }) => {
     try {
       setLoading(true);
       setError(null);
@@ -193,11 +204,14 @@ export const useDiveTours = () => {
         guide_name: filters.guide_name,
         client_payment_status: filters.client_payment_status,
         guide_payment_status: filters.guide_payment_status,
+        page: filters.page || 1,
+        limit: filters.limit || 10,
       };
 
-      const data = await tourService.getToursWithFilters(apiFilters);
-      setTours(data);
-      return data;
+      const response = await tourService.getToursWithFilters(apiFilters);
+      setTours(response.data);
+      setPagination(response.pagination);
+      return response.data;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch tours with filters');
       console.error('Error fetching tours with filters:', err);
@@ -205,6 +219,16 @@ export const useDiveTours = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const goToPage = async (page: number) => {
+    if (page >= 1 && page <= pagination.totalPages) {
+      await loadTours(page, pagination.limit);
+    }
+  };
+
+  const changePageSize = async (newLimit: number) => {
+    await loadTours(1, newLimit);
   };
 
   const filterTours = (filters: DiveTourFilters) => {
@@ -247,9 +271,9 @@ export const useDiveTours = () => {
   };
 
   const refreshData = useCallback(async () => {
-    await loadTours();
+    await loadTours(pagination.page, pagination.limit);
     await loadStats();
-  }, [loadTours, loadStats]);
+  }, [loadTours, loadStats, pagination.page, pagination.limit]);
 
   const clearError = () => {
     setError(null);
@@ -260,6 +284,7 @@ export const useDiveTours = () => {
     loading,
     error,
     stats,
+    pagination,
 
     addTour,
     updateTour,
@@ -270,6 +295,8 @@ export const useDiveTours = () => {
     getToursWithFilters,
     filterTours,
     calculateCommissionValue,
+    goToPage,
+    changePageSize,
     refreshData,
     clearError,
   };

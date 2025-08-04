@@ -16,17 +16,41 @@ export interface CreateTourRequest {
 
 export interface UpdateTourRequest extends Partial<CreateTourRequest> {}
 
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: PaginationInfo;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message?: string;
   data?: T;
   count?: number;
   tourId?: string;
+  pagination?: PaginationInfo;
 }
 
 export interface DateRangeParams {
   startDate: string;
   endDate: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface GuideParams {
+  guideName: string;
+  page?: number;
+  limit?: number;
 }
 
 class TourService {
@@ -41,10 +65,12 @@ class TourService {
     }
   }
 
-  async getAllTours(): Promise<DiveTour[]> {
+  async getAllTours(page = 1, limit = 10): Promise<PaginatedResponse<DiveTour>> {
     try {
-      const response = await API.get<ApiResponse<DiveTour[]>>(this.baseUrl);
-      return response.data.data || [];
+      const response = await API.get<PaginatedResponse<DiveTour>>(this.baseUrl, {
+        params: { page, limit }
+      });
+      return response.data;
     } catch (error) {
       throw this.handleError(error, 'Error fetching tours');
     }
@@ -77,23 +103,28 @@ class TourService {
     }
   }
 
-  async getToursByDateRange(params: DateRangeParams): Promise<DiveTour[]> {
+  async getToursByDateRange(params: DateRangeParams): Promise<PaginatedResponse<DiveTour>> {
     try {
-      const response = await API.get<ApiResponse<DiveTour[]>>(`${this.baseUrl}/date-range`, {
+      const response = await API.get<PaginatedResponse<DiveTour>>(`${this.baseUrl}/date-range`, {
         params
       });
-      return response.data.data || [];
+      return response.data;
     } catch (error) {
       throw this.handleError(error, 'Error fetching tours by date range');
     }
   }
 
-  async getToursByGuide(guideName: string): Promise<DiveTour[]> {
+  async getToursByGuide(params: GuideParams): Promise<PaginatedResponse<DiveTour>> {
     try {
-      const response = await API.get<ApiResponse<DiveTour[]>>(`${this.baseUrl}/guide/${encodeURIComponent(guideName)}`);
-      return response.data.data || [];
+      const response = await API.get<PaginatedResponse<DiveTour>>(`${this.baseUrl}/guide/${encodeURIComponent(params.guideName)}`, {
+        params: {
+          page: params.page,
+          limit: params.limit
+        }
+      });
+      return response.data;
     } catch (error) {
-      throw this.handleError(error, `Error fetching tours for guide ${guideName}`);
+      throw this.handleError(error, `Error fetching tours for guide ${params.guideName}`);
     }
   }
 
@@ -103,28 +134,43 @@ class TourService {
     guide_name?: string;
     client_payment_status?: 'paid' | 'pending' | 'all';
     guide_payment_status?: 'paid' | 'pending' | 'all';
-  }): Promise<DiveTour[]> {
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedResponse<DiveTour>> {
     try {
+      const { page = 1, limit = 10, ...otherFilters } = filters;
         
-      if (filters.date_from && filters.date_to) {
+      if (otherFilters.date_from && otherFilters.date_to) {
         const tours = await this.getToursByDateRange({
-          startDate: filters.date_from,
-          endDate: filters.date_to
+          startDate: otherFilters.date_from,
+          endDate: otherFilters.date_to,
+          page,
+          limit
         });
         
-        
-        return this.applyFilters(tours, filters);
+        // Apply additional filters to the paginated results
+        const filteredTours = this.applyFilters(tours.data, otherFilters);
+        return {
+          ...tours,
+          data: filteredTours,
+          pagination: {
+            ...tours.pagination,
+            totalCount: filteredTours.length
+          }
+        };
       }
 
-      
-      if (filters.guide_name) {
-        const tours = await this.getToursByGuide(filters.guide_name);
-        return this.applyFilters(tours, filters);
+      if (otherFilters.guide_name) {
+        const tours = await this.getToursByGuide({
+          guideName: otherFilters.guide_name,
+          page,
+          limit
+        });
+        return tours;
       }
 
-      
-      const tours = await this.getAllTours();
-      return this.applyFilters(tours, filters);
+      const tours = await this.getAllTours(page, limit);
+      return tours;
     } catch (error) {
       throw this.handleError(error, 'Error fetching tours with filters');
     }
@@ -138,7 +184,6 @@ class TourService {
     guide_payment_status?: 'paid' | 'pending' | 'all';
   }): DiveTour[] {
     return tours.filter(tour => {
-        
       if (filters.date_from && new Date(tour.tour_date) < new Date(filters.date_from)) {
         return false;
       }
@@ -146,14 +191,12 @@ class TourService {
         return false;
       }
 
-      
       if (filters.guide_name && !tour.guide_name.toLowerCase().includes(filters.guide_name.toLowerCase())) {
         return false;
       }
 
-      
       if (filters.client_payment_status && filters.client_payment_status !== 'all' && 
-          tour.guide_payment_status !== filters.client_payment_status) {
+          tour.client_payment_status !== filters.client_payment_status) {
         return false;
       }
 
@@ -187,7 +230,11 @@ class TourService {
     thisMonthRevenue: number;
   }> {
     try {
-      const tours = await this.getAllTours();
+      // Get all tours without pagination for stats calculation
+      const response = await API.get<PaginatedResponse<DiveTour>>(this.baseUrl, {
+        params: { page: 1, limit: 1000 } // Get a large number to get all tours
+      });
+      const tours = response.data.data;
       
       const now = new Date();
       const thisMonth = now.getMonth();
